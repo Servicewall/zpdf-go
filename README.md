@@ -125,8 +125,9 @@ line reconstruction).
 | darwin/amd64 | supported (macOS 13+) |
 | others | `ErrUnsupported` |
 
-The libraries are built from zpdf `v0.3.2` (Zig 0.17.0). For musl (Alpine) builds
-use `-tags musl`; the musl archives live under `lib/linux_*_musl/`. This release
+The libraries are built from zpdf `v0.3.3` (Zig 0.17.0). For musl (Alpine) builds
+use `-tags musl`; the musl archives live under `lib/linux_*_musl/`. They are
+stripped: each platform archive is ~0.6–0.9 MiB instead of ~8 MiB. zpdf v0.3.2
 moves large decompression buffers off the C stack, so it is safe to call from
 Go with `GOMAXPROCS > 1`.
 
