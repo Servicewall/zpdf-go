@@ -1,4 +1,4 @@
-//go:build !((darwin && arm64) || (linux && (amd64 || arm64)))
+//go:build !((darwin && (arm64 || amd64)) || (linux && (amd64 || arm64)))
 
 package zpdf
 
@@ -33,12 +33,12 @@ const (
 
 func (e Error) Error() string { return "zpdf: error" }
 
-func Open([]byte) (*Document, error)          { return nil, ErrUnsupported }
-func OpenBorrowed([]byte) (*Document, error)  { return nil, ErrUnsupported }
-func (d *Document) Close()                    {}
-func (d *Document) PageCount() int            { return 0 }
-func (d *Document) IsEncrypted() bool         { return false }
-func (d *Document) AllText() (string, error)  { return "", ErrUnsupported }
+func Open([]byte) (*Document, error)                     { return nil, ErrUnsupported }
+func OpenBorrowed([]byte) (*Document, error)             { return nil, ErrUnsupported }
+func (d *Document) Close()                               {}
+func (d *Document) PageCount() int                       { return 0 }
+func (d *Document) IsEncrypted() bool                    { return false }
+func (d *Document) AllText() (string, error)             { return "", ErrUnsupported }
 func (d *Document) AllTextReadingOrder() (string, error) { return "", ErrUnsupported }
 func (d *Document) PageText(int) (string, error)         { return "", ErrUnsupported }
 func (d *Document) PageInfo(int) (PageInfo, error)       { return PageInfo{}, ErrUnsupported }

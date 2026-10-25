@@ -89,13 +89,15 @@ line reconstruction).
 | linux/amd64 | supported (glibc 2.28+) |
 | linux/arm64 | supported (glibc 2.28+) |
 | darwin/arm64 | supported (macOS 13+) |
+| darwin/amd64 | supported (macOS 13+) |
 | others | `ErrUnsupported` |
 
 The libraries are built from zpdf `v0.2.0` (Zig 0.17.0):
 
 ```bash
 # in donge/zpdf
-zig build capi -Doptimize=ReleaseFast -Dtarget=aarch64-macos.13.0 --prefix dist/darwin
+zig build capi -Doptimize=ReleaseFast -Dtarget=aarch64-macos.13.0 --prefix dist/darwin-arm64
+zig build capi -Doptimize=ReleaseFast -Dtarget=x86_64-macos.13.0 --prefix dist/darwin-amd64
 zig build capi -Doptimize=ReleaseFast -Dtarget=x86_64-linux-gnu.2.28 --prefix dist/linux-amd64
 zig build capi -Doptimize=ReleaseFast -Dtarget=aarch64-linux-gnu.2.28 --prefix dist/linux-arm64
 ```
