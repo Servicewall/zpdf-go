@@ -9,10 +9,6 @@ package zpdf
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/include
-#cgo darwin,arm64 LDFLAGS: ${SRCDIR}/lib/darwin_arm64/libzpdf.a
-#cgo darwin,amd64 LDFLAGS: ${SRCDIR}/lib/darwin_amd64/libzpdf.a
-#cgo linux,amd64  LDFLAGS: ${SRCDIR}/lib/linux_amd64/libzpdf.a -lm -lpthread
-#cgo linux,arm64  LDFLAGS: ${SRCDIR}/lib/linux_arm64/libzpdf.a -lm -lpthread
 #include <stdlib.h>
 #include "zpdf.h"
 */

@@ -118,13 +118,14 @@ line reconstruction).
 
 | GOOS / GOARCH | status |
 |---|---|
-| linux/amd64 | supported (glibc 2.28+) |
-| linux/arm64 | supported (glibc 2.28+) |
+| linux/amd64 | supported (glibc 2.28+ and musl) |
+| linux/arm64 | supported (glibc 2.28+ and musl) |
+| alpine/musl | add `-tags musl` when building |
 | darwin/arm64 | supported (macOS 13+) |
 | darwin/amd64 | supported (macOS 13+) |
 | others | `ErrUnsupported` |
 
-The libraries are built from zpdf `v0.3.1` (Zig 0.17.0):
+The libraries are built from zpdf `v0.3.1` (Zig 0.17.0). For musl (Alpine) builds use `-tags musl`; the musl archives live under `lib/linux_*_musl/`.
 
 ```bash
 # in donge/zpdf
