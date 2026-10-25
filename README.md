@@ -21,6 +21,9 @@ if err != nil {
 }
 defer doc.Close()
 
+// Or, for a PDF on disk, memory-map it instead of copying:
+// doc, err := zpdf.OpenFile("document.pdf")
+
 if doc.IsEncrypted() {
     return errors.New("encrypted PDF")
 }
@@ -55,7 +58,7 @@ Opt-in: callers that never need images pay nothing. Only pages without a text
 layer normally need this.
 
 ```go
-imgs, err := doc.PageImages(0)
+imgs, err := doc.PageImages(0) // copies image data into Go
 for _, img := range imgs {
     switch img.Format {
     case zpdf.ImageJPEG:
@@ -80,6 +83,19 @@ for _, img := range imgs {
 - Limits applied by zpdf: max 8 images/page, min 64 px, max 40 MP;
   `/ImageMask` and `/SMask` are skipped.
 
+For OCR, `PageImagesBorrowed` avoids copying image data:
+
+```go
+set, err := doc.PageImagesBorrowed(0)
+if err != nil {
+    return err
+}
+defer set.Close() // image slices are invalid after this
+for _, img := range set.Images() {
+    // img.Data points into C memory; pass it to OCR synchronously
+}
+```
+
 ## API
 
 | Function | Description |
@@ -94,6 +110,8 @@ for _, img := range imgs {
 | `(*Document) PageText(page int) (string, error)` | One page, content-stream order |
 | `(*Document) PageInfo(page int) (PageInfo, error)` | MediaBox size and rotation |
 | `(*Document) PageImages(page int) ([]Image, error)` | Page images for OCR (opt-in); `Image.Format` is `ImageRGB24`, `ImageGray8`, `ImageJPEG`, `ImageCCITT` or `ImageJPEG2000` |
+| `OpenFile(path string) (*Document, error)` | Memory-map a PDF instead of copying it |
+| `(*Document) PageImagesBorrowed(page int) (*PageImageSet, error)` | Page images without the C-to-Go copy; call `Close` after use |
 
 Errors: `ErrInvalidPDF`, `ErrUnsupported` (platform), `ErrPageNotFound`,
 `ErrExtractionFailed`, `ErrOutOfMemory`.
