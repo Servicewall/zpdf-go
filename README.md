@@ -92,7 +92,7 @@ line reconstruction).
 | darwin/amd64 | supported (macOS 13+) |
 | others | `ErrUnsupported` |
 
-The libraries are built from zpdf `v0.2.0` (Zig 0.17.0):
+The libraries are built from zpdf `v0.2.1` (Zig 0.17.0):
 
 ```bash
 # in donge/zpdf
