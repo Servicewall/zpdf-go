@@ -61,7 +61,8 @@ type Image struct {
 }
 
 // PageImageSet owns page images returned by PageImagesBorrowed. Image.Data
-// slices point directly into C memory and are invalid after Close.
+// slices point directly into C memory and are invalid after Close. Keep the
+// set alive until all images have been consumed; it has no finalizer.
 type PageImageSet struct {
 	ptr    *C.ZpdfPageImage
 	count  int
@@ -332,7 +333,6 @@ func (d *Document) PageImagesBorrowed(page int) (*PageImageSet, error) {
 			Data:       data,
 		}
 	}
-	runtime.SetFinalizer(set, (*PageImageSet).Close)
 	return set, nil
 }
 
