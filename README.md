@@ -125,7 +125,10 @@ line reconstruction).
 | darwin/amd64 | supported (macOS 13+) |
 | others | `ErrUnsupported` |
 
-The libraries are built from zpdf `v0.3.1` (Zig 0.17.0). For musl (Alpine) builds use `-tags musl`; the musl archives live under `lib/linux_*_musl/`.
+The libraries are built from zpdf `v0.3.2` (Zig 0.17.0). For musl (Alpine) builds
+use `-tags musl`; the musl archives live under `lib/linux_*_musl/`. This release
+moves large decompression buffers off the C stack, so it is safe to call from
+Go with `GOMAXPROCS > 1`.
 
 ```bash
 # in donge/zpdf
@@ -133,6 +136,9 @@ zig build capi -Doptimize=ReleaseFast -Dtarget=aarch64-macos.13.0 --prefix dist/
 zig build capi -Doptimize=ReleaseFast -Dtarget=x86_64-macos.13.0 --prefix dist/darwin-amd64
 zig build capi -Doptimize=ReleaseFast -Dtarget=x86_64-linux-gnu.2.28 --prefix dist/linux-amd64
 zig build capi -Doptimize=ReleaseFast -Dtarget=aarch64-linux-gnu.2.28 --prefix dist/linux-arm64
+# Alpine / musl
+zig build capi -Doptimize=ReleaseFast -Dtarget=x86_64-linux-musl --prefix dist/linux-amd64-musl
+zig build capi -Doptimize=ReleaseFast -Dtarget=aarch64-linux-musl --prefix dist/linux-arm64-musl
 ```
 
 On macOS the archive must be re-archived with `libtool -static` so Apple's
