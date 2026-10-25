@@ -49,6 +49,37 @@ Page geometry:
 info, _ := doc.PageInfo(0) // Width, Height, Rotation (0/90/180/270)
 ```
 
+### Page images (for OCR)
+
+Opt-in: callers that never need images pay nothing. Only pages without a text
+layer normally need this.
+
+```go
+imgs, err := doc.PageImages(0)
+for _, img := range imgs {
+    switch img.Format {
+    case zpdf.ImageJPEG:
+        // img.Data is the original JPEG — pass it to your OCR engine
+    case zpdf.ImageRGB24:
+        // img.Data is RGB24; stride = img.Width*3
+    case zpdf.ImageGray8:
+        // img.Data is 8-bit gray; stride = img.Width
+    case zpdf.ImageCCITT:
+        // raw fax data + img.CCITTK / img.BlackIs1
+        // decode with golang.org/x/image/ccitt
+    case zpdf.ImageJPEG2000:
+        // raw JPX bytes; no bundled decoder
+    }
+}
+```
+
+- DCT/JPEG is returned as-is (no re-encode, no render).
+- Flate/LZW/RunLength samples are converted to RGB24 or GRAY8
+  (gray/rgb/cmyk/indexed, bpc 1 and 8; PNG predictors supported).
+- CCITT is raw with `CCITTK` and `BlackIs1` for `x/image/ccitt`.
+- Limits applied by zpdf: max 8 images/page, min 64 px, max 40 MP;
+  `/ImageMask` and `/SMask` are skipped.
+
 ## API
 
 | Function | Description |
@@ -62,6 +93,7 @@ info, _ := doc.PageInfo(0) // Width, Height, Rotation (0/90/180/270)
 | `(*Document) AllTextReadingOrder() (string, error)` | All pages, reading order |
 | `(*Document) PageText(page int) (string, error)` | One page, content-stream order |
 | `(*Document) PageInfo(page int) (PageInfo, error)` | MediaBox size and rotation |
+| `(*Document) PageImages(page int) ([]Image, error)` | Page images for OCR (opt-in); `Image.Format` is `ImageRGB24`, `ImageGray8`, `ImageJPEG`, `ImageCCITT` or `ImageJPEG2000` |
 
 Errors: `ErrInvalidPDF`, `ErrUnsupported` (platform), `ErrPageNotFound`,
 `ErrExtractionFailed`, `ErrOutOfMemory`.

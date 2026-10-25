@@ -1,4 +1,5 @@
-// Package zpdf provides PDF text extraction backed by the zpdf Zig library.
+// Package zpdf provides PDF text extraction backed by the zpdf Zig library,
+// plus optional page image extraction for OCR.
 //
 // The static library for each supported platform is bundled with this module;
 // callers do not need cgo, a C toolchain, or any system PDF library.
