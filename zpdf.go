@@ -24,7 +24,7 @@ import (
 	"unsafe"
 )
 
-const abiVersion = 1
+const abiVersion = 2
 
 // Document is an open PDF. It is not safe for concurrent use.
 type Document struct {
@@ -36,6 +36,31 @@ type PageInfo struct {
 	Width    float64
 	Height   float64
 	Rotation int
+}
+
+// ImageFormat is the encoding of an extracted page image.
+type ImageFormat int
+
+const (
+	ImageRGB24 ImageFormat = iota
+	ImageGray8
+	ImageJPEG
+	ImageCCITT
+	ImageJPEG2000
+)
+
+// Image is one image extracted from a page for OCR.
+type Image struct {
+	Page       int
+	Rect       [4]float64 // x0, y0, x1, y1 in page coordinates
+	Width      int
+	Height     int
+	Format     ImageFormat
+	BPC        int
+	ColorSpace int
+	CCITTK     int
+	BlackIs1   bool
+	Data       []byte
 }
 
 // Error is an error returned by the zpdf C library.
@@ -184,6 +209,46 @@ func (d *Document) extract(fn func(*C.size_t) *C.uint8_t) (string, error) {
 	}
 	defer C.zpdf_free_buffer(ptr, n)
 	return C.GoStringN((*C.char)(unsafe.Pointer(ptr)), C.int(n)), nil
+}
+
+// PageImages returns the images on a page (opt-in; use it only for OCR).
+func (d *Document) PageImages(page int) ([]Image, error) {
+	if d == nil || d.p == nil {
+		return nil, ErrInvalidHandle
+	}
+	if page < 0 || page >= d.PageCount() {
+		return nil, ErrPageNotFound
+	}
+	var out *C.ZpdfPageImage
+	var count C.size_t
+	if code := C.zpdf_extract_page_images(d.p, C.int(page), &out, &count); code != 0 {
+		return nil, lastError()
+	}
+	defer C.zpdf_free_page_images(out, count)
+	if count == 0 {
+		return nil, nil
+	}
+	arr := unsafe.Slice(out, int(count))
+	imgs := make([]Image, len(arr))
+	for i, ci := range arr {
+		var data []byte
+		if ci.data != nil && ci.len > 0 {
+			data = C.GoBytes(unsafe.Pointer(ci.data), C.int(ci.len))
+		}
+		imgs[i] = Image{
+			Page:       int(ci.page),
+			Rect:       [4]float64{float64(ci.x0), float64(ci.y0), float64(ci.x1), float64(ci.y1)},
+			Width:      int(ci.width),
+			Height:     int(ci.height),
+			Format:     ImageFormat(ci.format),
+			BPC:        int(ci.bpc),
+			ColorSpace: int(ci.colorspace),
+			CCITTK:     int(ci.ccitt_k),
+			BlackIs1:   bool(ci.black_is_1),
+			Data:       data,
+		}
+	}
+	return imgs, nil
 }
 
 // PageInfo returns the page size and rotation.

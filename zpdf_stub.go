@@ -21,6 +21,31 @@ type PageInfo struct {
 	Rotation int
 }
 
+// ImageFormat is the encoding of an extracted page image.
+type ImageFormat int
+
+const (
+	ImageRGB24 ImageFormat = iota
+	ImageGray8
+	ImageJPEG
+	ImageCCITT
+	ImageJPEG2000
+)
+
+// Image is one image extracted from a page for OCR.
+type Image struct {
+	Page       int
+	Rect       [4]float64
+	Width      int
+	Height     int
+	Format     ImageFormat
+	BPC        int
+	ColorSpace int
+	CCITTK     int
+	BlackIs1   bool
+	Data       []byte
+}
+
 // Error is an error returned by the zpdf C library.
 type Error int
 
@@ -42,3 +67,4 @@ func (d *Document) AllText() (string, error)             { return "", ErrUnsuppo
 func (d *Document) AllTextReadingOrder() (string, error) { return "", ErrUnsupported }
 func (d *Document) PageText(int) (string, error)         { return "", ErrUnsupported }
 func (d *Document) PageInfo(int) (PageInfo, error)       { return PageInfo{}, ErrUnsupported }
+func (d *Document) PageImages(int) ([]Image, error)      { return nil, ErrUnsupported }
