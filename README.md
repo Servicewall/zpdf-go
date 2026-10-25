@@ -73,7 +73,7 @@ cache:
 
 | engine | total | median ms/page | mean coverage vs poppler |
 |---|---:|---:|---:|
-| **zpdf** | **0.18 s** | **0.16** | **0.993** |
+| **zpdf** | **0.14 s** | **0.16** | **0.993** |
 | poppler | 1.00 s | 0.57 | 1.000 |
 | PDFium | 1.07 s | 0.71 | 0.995 |
 | MuPDF | 0.84 s | 0.67 | 0.999 |
@@ -91,7 +91,7 @@ line reconstruction).
 | darwin/arm64 | supported (macOS 13+) |
 | others | `ErrUnsupported` |
 
-The libraries are built from zpdf `v0.1.0`:
+The libraries are built from zpdf `v0.2.0` (Zig 0.17.0):
 
 ```bash
 # in donge/zpdf
