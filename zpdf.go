@@ -60,6 +60,34 @@ type Image struct {
 	Data       []byte
 }
 
+// PageImageSet owns page images returned by PageImagesBorrowed. Image.Data
+// slices point directly into C memory and are invalid after Close.
+type PageImageSet struct {
+	ptr    *C.ZpdfPageImage
+	count  int
+	images []Image
+}
+
+// Images returns the images in the set. The slices are valid until Close.
+func (s *PageImageSet) Images() []Image {
+	if s == nil {
+		return nil
+	}
+	return s.images
+}
+
+// Close releases the C-side image buffers. It is safe to call more than once.
+func (s *PageImageSet) Close() {
+	if s == nil || s.ptr == nil {
+		return
+	}
+	C.zpdf_free_page_images(s.ptr, C.size_t(s.count))
+	s.ptr = nil
+	s.count = 0
+	s.images = nil
+	runtime.SetFinalizer(s, nil)
+}
+
 // Error is an error returned by the zpdf C library.
 type Error int
 
@@ -132,6 +160,24 @@ func OpenBorrowed(data []byte) (*Document, error) {
 	p := C.zpdf_open_memory((*C.uint8_t)(unsafe.Pointer(&data[0])), C.size_t(len(data)))
 	if p == nil {
 		return nil, lastError()
+	}
+	d := &Document{p: p}
+	if d.PageCount() <= 0 {
+		d.Close()
+		return nil, ErrInvalidPDF
+	}
+	runtime.SetFinalizer(d, (*Document).Close)
+	return d, nil
+}
+
+// OpenFile memory-maps path and returns a Document. The mapping is released
+// by Close, so the PDF is never copied into Go or C heap memory.
+func OpenFile(path string) (*Document, error) {
+	cpath := C.CString(path)
+	defer C.free(unsafe.Pointer(cpath))
+	p := C.zpdf_open(cpath)
+	if p == nil {
+		return nil, ErrInvalidPDF
 	}
 	d := &Document{p: p}
 	if d.PageCount() <= 0 {
@@ -246,6 +292,48 @@ func (d *Document) PageImages(page int) ([]Image, error) {
 		}
 	}
 	return imgs, nil
+}
+
+// PageImagesBorrowed is PageImages without the C-to-Go copy. Image.Data points
+// into C memory owned by the returned set; call Close after OCR.
+func (d *Document) PageImagesBorrowed(page int) (*PageImageSet, error) {
+	if d == nil || d.p == nil {
+		return nil, ErrInvalidHandle
+	}
+	if page < 0 || page >= d.PageCount() {
+		return nil, ErrPageNotFound
+	}
+	var out *C.ZpdfPageImage
+	var count C.size_t
+	if code := C.zpdf_extract_page_images(d.p, C.int(page), &out, &count); code != 0 {
+		return nil, lastError()
+	}
+	if count == 0 {
+		return nil, nil
+	}
+	set := &PageImageSet{ptr: out, count: int(count)}
+	arr := unsafe.Slice(out, int(count))
+	set.images = make([]Image, len(arr))
+	for i, ci := range arr {
+		var data []byte
+		if ci.data != nil && ci.len > 0 {
+			data = unsafe.Slice((*byte)(unsafe.Pointer(ci.data)), int(ci.len))
+		}
+		set.images[i] = Image{
+			Page:       int(ci.page),
+			Rect:       [4]float64{float64(ci.x0), float64(ci.y0), float64(ci.x1), float64(ci.y1)},
+			Width:      int(ci.width),
+			Height:     int(ci.height),
+			Format:     ImageFormat(ci.format),
+			BPC:        int(ci.bpc),
+			ColorSpace: int(ci.colorspace),
+			CCITTK:     int(ci.ccitt_k),
+			BlackIs1:   bool(ci.black_is_1),
+			Data:       data,
+		}
+	}
+	runtime.SetFinalizer(set, (*PageImageSet).Close)
+	return set, nil
 }
 
 // PageInfo returns the page size and rotation.

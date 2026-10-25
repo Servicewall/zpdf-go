@@ -3,6 +3,8 @@ package zpdf
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -203,5 +205,27 @@ func TestPageImagesNone(t *testing.T) {
 	}
 	if len(imgs) != 0 {
 		t.Fatalf("images = %d, want 0", len(imgs))
+	}
+}
+
+func TestOpenFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.pdf")
+	if err := os.WriteFile(path, makePDF("Mapped"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	doc, err := OpenFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer doc.Close()
+	text, err := doc.AllText()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "Mapped") {
+		t.Fatalf("AllText = %q", text)
+	}
+	if _, err := OpenFile(filepath.Join(t.TempDir(), "missing.pdf")); err == nil {
+		t.Fatal("OpenFile(missing) = nil error")
 	}
 }
