@@ -74,6 +74,51 @@ func TestExtract(t *testing.T) {
 	}
 }
 
+// makeScaledTmPDF builds a one-page PDF whose lines use the large-Tf/small-Tm
+// layout common in WPS and Office exports.
+func makeScaledTmPDF() []byte {
+	var b bytes.Buffer
+	b.WriteString("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n")
+	objs := make([]string, 5)
+	objs[0] = "<< /Type /Catalog /Pages 2 0 R >>"
+	objs[1] = "<< /Type /Pages /Kids [3 0 R] /Count 1 >>"
+	objs[2] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R " +
+		"/Resources << /Font << /F1 5 0 R >> >> >>"
+	content := "BT /F1 281 Tf 0.05 0 0 -0.05 72 700 Tm (LineOne) Tj ET\n" +
+		"BT /F1 281 Tf 0.05 0 0 -0.05 72 686 Tm (LineTwo) Tj ET"
+	objs[3] = fmt.Sprintf("<< /Length %d >>\nstream\n%s\nendstream", len(content), content)
+	objs[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"
+
+	offsets := make([]int, len(objs))
+	for i, body := range objs {
+		offsets[i] = b.Len()
+		fmt.Fprintf(&b, "%d 0 obj\n%s\nendobj\n", i+1, body)
+	}
+	xref := b.Len()
+	fmt.Fprintf(&b, "xref\n0 %d\n", len(objs)+1)
+	b.WriteString("0000000000 65535 f \n")
+	for _, off := range offsets {
+		fmt.Fprintf(&b, "%010d 00000 n \n", off)
+	}
+	fmt.Fprintf(&b, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objs)+1, xref)
+	return b.Bytes()
+}
+
+func TestScaledTmLines(t *testing.T) {
+	doc, err := Open(makeScaledTmPDF())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer doc.Close()
+	text, err := doc.AllText()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "LineOne\nLineTwo") {
+		t.Fatalf("expected separate lines, got %q", text)
+	}
+}
+
 func TestOpenBorrowed(t *testing.T) {
 	data := makePDF("Borrowed")
 	doc, err := OpenBorrowed(data)
