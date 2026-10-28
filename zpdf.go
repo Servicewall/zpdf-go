@@ -1,10 +1,12 @@
+//go:build linux && (amd64 || arm64)
+
 // Package zpdf provides PDF text extraction backed by the zpdf Zig library,
 // plus optional page image extraction for OCR.
 //
 // The static library for each supported platform is bundled with this module;
 // callers do not need cgo, a C toolchain, or any system PDF library.
 //
-// Supported platforms: darwin/arm64, linux/amd64, linux/arm64.
+// Supported platforms: linux/amd64 and linux/arm64 (glibc 2.28+).
 package zpdf
 
 /*

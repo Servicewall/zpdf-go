@@ -1,4 +1,4 @@
-//go:build !((darwin && (arm64 || amd64)) || (linux && (amd64 || arm64)))
+//go:build !(linux && (amd64 || arm64))
 
 package zpdf
 
