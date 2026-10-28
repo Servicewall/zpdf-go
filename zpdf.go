@@ -1,4 +1,4 @@
-//go:build linux && (amd64 || arm64)
+//go:build linux && (amd64 || arm64) && !musl
 
 // Package zpdf provides PDF text extraction backed by the zpdf Zig library,
 // plus optional page image extraction for OCR.
