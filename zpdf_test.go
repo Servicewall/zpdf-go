@@ -121,6 +121,69 @@ func TestScaledTmLines(t *testing.T) {
 	}
 }
 
+// makeFieldGapPDF places two runs on one baseline, `gap` points apart, the way
+// a form generator appends each filled value with an absolute Tm.
+func makeFieldGapPDF(first, second string, gap int) []byte {
+	var b bytes.Buffer
+	b.WriteString("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n")
+	objs := make([]string, 5)
+	objs[0] = "<< /Type /Catalog /Pages 2 0 R >>"
+	objs[1] = "<< /Type /Pages /Kids [3 0 R] /Count 1 >>"
+	objs[2] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R " +
+		"/Resources << /Font << /F1 5 0 R >> >> >>"
+	content := fmt.Sprintf("BT /F1 12 Tf 1 0 0 1 72 700 Tm (%s) Tj "+
+		"1 0 0 1 %d 700 Tm (%s) Tj ET", first, 72+gap, second)
+	objs[3] = fmt.Sprintf("<< /Length %d >>\nstream\n%s\nendstream", len(content), content)
+	objs[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"
+
+	offsets := make([]int, len(objs))
+	for i, body := range objs {
+		offsets[i] = b.Len()
+		fmt.Fprintf(&b, "%d 0 obj\n%s\nendobj\n", i+1, body)
+	}
+	xref := b.Len()
+	fmt.Fprintf(&b, "xref\n0 %d\n", len(objs)+1)
+	b.WriteString("0000000000 65535 f \n")
+	for _, off := range offsets {
+		fmt.Fprintf(&b, "%010d 00000 n \n", off)
+	}
+	fmt.Fprintf(&b, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objs)+1, xref)
+	return b.Bytes()
+}
+
+// Two fields 300pt apart on one baseline must not be glued together: form
+// generators draw the label between them from another layer.
+func TestFieldGapSeparated(t *testing.T) {
+	doc, err := Open(makeFieldGapPDF("NameField", "IDCardField", 300))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer doc.Close()
+	text, err := doc.AllText()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "NameField IDCardField") {
+		t.Fatalf("expected a separator between the fields, got %q", text)
+	}
+}
+
+// A run continued a few points later is still the same word.
+func TestFieldGapNotSplit(t *testing.T) {
+	doc, err := Open(makeFieldGapPDF("NameField", "IDCardField", 4))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer doc.Close()
+	text, err := doc.AllText()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "NameFieldIDCardField") {
+		t.Fatalf("expected the run to stay intact, got %q", text)
+	}
+}
+
 func TestOpenBorrowed(t *testing.T) {
 	data := makePDF("Borrowed")
 	doc, err := OpenBorrowed(data)
