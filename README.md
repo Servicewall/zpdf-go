@@ -140,11 +140,11 @@ line reconstruction).
 | linux/arm64 | supported (glibc 2.28+) |
 | others | `ErrUnsupported` |
 
-The libraries are built from zpdf commit `9ff8f8b` (post-`v0.3.3`, includes the
-text-matrix line-break fix; Zig 0.17.0). Only Linux amd64 and arm64 are bundled.
-They are stripped: each archive is ~0.6–0.9 MiB instead of ~8 MiB. zpdf v0.3.2
-moves large decompression buffers off the C stack, so it is safe to call from
-Go with `GOMAXPROCS > 1`.
+The libraries are built from zpdf commit `59b696f` (post-`v0.3.3`; includes the
+text-matrix line-break fix and the field-gap separator; Zig 0.17.0). Only Linux
+amd64 and arm64 are bundled. They are stripped: each archive is ~0.6–0.9 MiB
+instead of ~8 MiB. zpdf v0.3.2 moves large decompression buffers off the C
+stack, so it is safe to call from Go with `GOMAXPROCS > 1`.
 
 ```bash
 # in donge/zpdf
